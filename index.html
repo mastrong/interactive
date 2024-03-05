@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Project 2</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://kit.fontawesome.com/2ee59922b8.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Anton|Raleway&effect=shadow-multiple|3d"></link>
+</head>
+<body>
+
+<main>
+  <h1 class="font-effect-shadow-multiple">Easy Peasy Lemon Squeezy</h1>
+
+  <!--  Spinning lemon start button -->
+  <!--  <div id="start_button" class="circle big lemon" onclick="start()">Let's make lemonade!</div>-->
+  <button id="start_button" onclick="start()" class="fa-solid fa-lemon fa-beat-fade lemon img">
+    Start
+  </button>
+  <h2 id="subtitle">Let's make some lemonade!</h2>
+  <div id="steps" style="display: none;">
+    <div id="lemons" class="step">
+      <div>
+        <p>Juice</p>
+      </div>
+      <div id="all_lemons">
+        <i id="l1" onclick="squeeze(this.id)" class="fa-solid fa-lemon fa-bounce fa-4x lemon img"
+           style="color: #FFD43B;"></i>
+        <i id="l2" onclick="squeeze(this.id)" class="fa-solid fa-lemon fa-bounce fa-4x lemon img"
+           style="color: #FFD43B;"></i>
+        <i id="l3" onclick="squeeze(this.id)" class="fa-solid fa-lemon fa-bounce fa-4x lemon img"
+           style="color: #FFD43B;"></i>
+        <i id="l4" onclick="squeeze(this.id)" class="fa-solid fa-lemon fa-bounce fa-4x lemon img"
+           style="color: #FFD43B;"></i>
+        <i id="l5" onclick="squeeze(this.id)" class="fa-solid fa-lemon fa-bounce fa-4x lemon img"
+           style="color: #FFD43B;"></i>
+      </div>
+    </div>
+
+    <div id="water" class="step">
+      <div>
+        <i id="g1" class="fa-solid fa-glass-water-droplet fa-flip fa-3x img" ondblclick="fill(this.id)"></i>
+        <i id="g2" class="fa-solid fa-glass-water-droplet fa-flip fa-3x img" ondblclick="fill(this.id)"></i>
+        <i id="g3" class="fa-solid fa-glass-water-droplet fa-flip fa-3x img" ondblclick="fill(this.id)"></i>
+        <i id="g4" class="fa-solid fa-glass-water-droplet fa-flip fa-3x img" ondblclick="fill(this.id)"></i>
+      </div>
+      <div>
+        <p>Dilute</p>
+      </div>
+    </div>
+
+    <div id="sugar" class="step">
+      <div>
+        <p>Sweeten</p>
+      </div>
+      <div>
+        <i id="s1" class="fa-solid fa-cube img sugar fa-3x fa-spin" onclick="scoop(this.id)"></i>
+        <i id="s2" class="fa-solid fa-cube img sugar fa-3x fa-spin" onclick="scoop(this.id)"></i>
+        <i id="s3" class="fa-solid fa-cube img sugar fa-3x fa-spin" onclick="scoop(this.id)"></i>
+        <i id="s4" class="fa-solid fa-cube img sugar fa-3x fa-spin" onclick="scoop(this.id)"></i>
+      </div>
+
+    </div>
+
+    <div id="stir" class="step">
+
+      <div id="progressbar" class="progress" style="">
+        <div class="wrapper">
+          <div class="bar">
+
+          </div>
+        </div>
+      </div>
+      <div>
+        <p>Stir</p>
+      </div>
+    </div>
+
+    <div id="pour" class="step">
+
+      <p>Enjoy!</p>
+
+    </div>
+  </div>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
