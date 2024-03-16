@@ -2,98 +2,495 @@ let lemon_count = 0;
 let sugar_count = 0;
 let water_count = 0;
 let stir_count = 0;
-
-let lemons = document.getElementById("lemons")
-let water = document.getElementById("water")
-let sugar = document.getElementById("sugar")
-let stirring = document.getElementById("stir")
-let pouring = document.getElementById("pour")
-
-function start() {
-    let start_button = document.getElementById("start_button")
-    start_button.style.display = "none";
-
-    let steps = document.getElementById("steps")
-    steps.style.display = "grid";
-
-    lemons.style.display = "grid";
-}
+let body = document.body
 
 function stop_effects(element) {
     element.style.hover = "none";
     element.style.opacity = "0.5";
     element.style.animation = "none";
+    element.disabled = true;
 }
 
 function squeeze(button_id) {
     let squeezed = document.getElementById(button_id)
-    squeezed.classList.add("sqeezed");
-    squeezed.classList.remove("fa-lemon");
-    squeezed.classList.add("fa-droplet")
-    stop_effects(squeezed)
-    // TODO: have lemons turn into droplets of same color
-    lemon_count += 1;
+    if (!(squeezed.classList.contains("sqeezed"))) {
+        squeezed.classList.add("sqeezed");
+        squeezed.classList.remove("fa-lemon");
+        squeezed.classList.add("fa-droplet")
+        stop_effects(squeezed)
+        lemon_count += 1;
+    }
 
     if (lemon_count === 5) {
-        water.style.display = "grid";
+        // water.style.display = "grid";
+        fm3.setPercentage(7);
     }
 }
 
-function fill(button_id) {
-    console.log(button_id)
+function fill_cup(button_id) {
+    // console.log(button_id)
 
     let current_glass = document.getElementById(button_id)
-    current_glass.classList.remove("fa-glass-water-droplet")
-    current_glass.classList.remove("fa-flip")
-    current_glass.classList.add("fa-glass-water")
-    stop_effects(current_glass)
+    if (current_glass.classList.contains("fa-glass-water-droplet")) {
+        current_glass.classList.remove("fa-glass-water-droplet")
+        current_glass.classList.remove("fa-flip")
+        current_glass.classList.add("fa-glass-water")
+        stop_effects(current_glass)
 
-    water_count += 1
+        water_count += 1
+    }
+
     if (water_count === 4) {
-        sugar.style.display = "grid";
+        // sugar.style.display = "grid";
+        fm3.setPercentage(85);
     }
 }
 
-function scoop(button_id) {
-    console.log(button_id)
+function scoop(button_id, event) {
+    // console.log(button_id)
+    let current_cube = document.getElementById(button_id)
 
-    // cubes in a grid that stack
-    // drag and drop?
-    sugar_count += 1
+    if (current_cube.classList.contains("fa-spin")) {
+        // current_cube.classList.remove("fa-cube")
+        current_cube.classList.remove("fa-spin")
+        current_cube.classList.add("fa-cup-straw")
+        stop_effects(current_cube)
+        sugar_count += 1
+    }
+
     if (sugar_count === 4) {
-        stirring.style.display = "grid";
-        stir()
+        // stirring.style.display = "grid";
+        fm3.setPercentage(95);
+        body.addEventListener('mousemove', stir);
     }
 }
 
 function stir() {
-    console.log(lemon_count, sugar_count, water_count)
-    let stir_count = 0;
-    document.body.addEventListener('mousemove', function (e) {
-        if (stir_count < 100) {
-            stir_count += 1;
-            console.log(stir_count)
-            document.body.style.setProperty('--mouse-x', stir_count);
-        } else {
-            pouring.style.display = "grid";
-        }
-    })
-
+    // console.log(lemon_count, sugar_count, water_count)
+    if (stir_count < 100) {
+        stir_count += 1;
+        console.log(stir_count)
+        document.body.style.setProperty('--mouse-x', stir_count);
+    } else {
+        fm3.setPercentage(100);
+        body.removeEventListener('mousemove', stir);
+    }
 
 }
 
 function pour() {
-    // check if all counts are what we expect
-    console.log("pouring")
-
-    // creative drinking? water flowing down screen?
-}
-
-// https://stackoverflow.com/questions/49753795/update-water-level-based-on-the-value
-
-function get_loc() {
-    let target = document.getElementById("water_circle");
-    console.log(target.offsetLeft, target.offsetTop)
+    // console.log("pouring")
+    fm3.setPercentage(0);
 }
 
 
+/**
+ * Javascript Fluid Meter
+ * by Angel Arcoraci
+ * https://github.com/aarcoraci
+ *
+ * MIT License
+ */
+function FluidMeter() {
+    var context;
+    var targetContainer;
+
+    var time = null;
+    var dt = null;
+
+    var options = {
+        drawShadow: true,
+        drawText: true,
+        drawPercentageSign: true,
+        drawBubbles: true,
+        fontSize: "70px",
+        fontFamily: "Arial",
+        fontFillStyle: "white",
+        size: 300,
+        borderWidth: 25,
+        backgroundColor: "#e2e2e2",
+        foregroundColor: "#fafafa"
+    };
+
+    var currentFillPercentage = 0;
+    var fillPercentage = 0;
+
+    //#region fluid context values
+    var foregroundFluidLayer = {
+        fillStyle: "purple",
+        angle: 0,
+        horizontalPosition: 0,
+        angularSpeed: 0,
+        maxAmplitude: 9,
+        frequency: 30,
+        horizontalSpeed: -150,
+        initialHeight: 0
+    };
+
+    var backgroundFluidLayer = {
+        fillStyle: "pink",
+        angle: 0,
+        horizontalPosition: 0,
+        angularSpeed: 140,
+        maxAmplitude: 12,
+        frequency: 40,
+        horizontalSpeed: 150,
+        initialHeight: 0
+    };
+
+    var bubblesLayer = {
+        bubbles: [],
+        amount: 12,
+        speed: 20,
+        current: 0,
+        swing: 0,
+        size: 2,
+        reset: function (bubble) {
+            // calculate the area where to spawn the bubble based on the fluid area
+            var meterBottom = (options.size - (options.size - getMeterRadius()) / 2) - options.borderWidth;
+            var fluidAmount = currentFillPercentage * (getMeterRadius() - options.borderWidth * 2) / 100;
+
+            bubble.r = random(this.size, this.size * 2) / 2;
+            bubble.x = random(0, options.size);
+            bubble.y = random(meterBottom, meterBottom - fluidAmount);
+            bubble.velX = 0;
+            bubble.velY = random(this.speed, this.speed * 2);
+            bubble.swing = random(0, 2 * Math.PI);
+        },
+        init() {
+            for (var i = 0; i < this.amount; i++) {
+
+                var meterBottom = (options.size - (options.size - getMeterRadius()) / 2) - options.borderWidth;
+                var fluidAmount = currentFillPercentage * (getMeterRadius() - options.borderWidth * 2) / 100;
+                this.bubbles.push({
+                    x: random(0, options.size),
+                    y: random(meterBottom, meterBottom - fluidAmount),
+                    r: random(this.size, this.size * 2) / 2,
+                    velX: 0,
+                    velY: random(this.speed, this.speed * 2)
+                });
+            }
+        }
+    }
+
+    //#endregion
+
+    /**
+     * initializes and mount the canvas element on the document
+     */
+    function setupCanvas() {
+        var canvas = document.createElement('canvas');
+        canvas.width = options.size;
+        canvas.height = options.size;
+        canvas.imageSmoothingEnabled = true;
+        context = canvas.getContext("2d");
+        targetContainer.appendChild(canvas);
+
+        // shadow is not required  to be on the draw loop
+        //#region shadow
+        if (options.drawShadow) {
+            context.save();
+            context.beginPath();
+            context.filter = "drop-shadow(0px 4px 6px rgba(0,0,0,0.1))";
+            context.arc(options.size / 2, options.size / 2, getMeterRadius() / 2, 0, 2 * Math.PI);
+            context.closePath();
+            context.fill();
+            context.restore();
+        }
+        //#endregion
+    }
+
+    /**
+     * draw cycle
+     */
+    function draw() {
+        var now = new Date().getTime();
+        dt = (now - (time || now)) / 1000;
+        time = now;
+
+        requestAnimationFrame(draw);
+        context.clearRect(0, 0, options.size, options.size);
+        drawMeterBackground();
+        drawFluid(dt);
+        if (options.drawText) {
+            drawText();
+        }
+        drawMeterForeground();
+    }
+
+    function drawMeterBackground() {
+        context.save();
+        context.fillStyle = options.backgroundColor;
+        context.beginPath();
+        context.arc(options.size / 2, options.size / 2, getMeterRadius() / 2 - options.borderWidth, 0, 2 * Math.PI);
+        context.closePath();
+        context.fill();
+        context.restore();
+    }
+
+    function drawMeterForeground() {
+        context.save();
+        context.lineWidth = options.borderWidth;
+        context.strokeStyle = options.foregroundColor;
+        context.beginPath();
+        context.arc(options.size / 2, options.size / 2, getMeterRadius() / 2 - options.borderWidth / 2, 0, 2 * Math.PI);
+        context.closePath();
+        context.stroke();
+        context.restore();
+    }
+
+    /**
+     * draws the fluid contents of the meter
+     * @param  {} dt elapsed time since last frame
+     */
+    function drawFluid(dt) {
+        context.save();
+        context.arc(options.size / 2, options.size / 2, getMeterRadius() / 2 - options.borderWidth, 0, Math.PI * 2);
+        context.clip();
+        drawFluidLayer(backgroundFluidLayer, dt);
+        drawFluidLayer(foregroundFluidLayer, dt);
+        if (options.drawBubbles) {
+            drawFluidMask(foregroundFluidLayer, dt);
+            drawBubblesLayer(dt);
+        }
+        context.restore();
+    }
+
+
+    /**
+     * draws the foreground fluid layer
+     * @param  {} dt elapsed time since last frame
+     */
+    function drawFluidLayer(layer, dt) {
+        // calculate wave angle
+        if (layer.angularSpeed > 0) {
+            layer.angle += layer.angularSpeed * dt;
+            layer.angle = layer.angle < 0 ? layer.angle + 360 : layer.angle;
+        }
+
+        // calculate horizontal position
+        layer.horizontalPosition += layer.horizontalSpeed * dt;
+        if (layer.horizontalSpeed > 0) {
+            layer.horizontalPosition > Math.pow(2, 53) ? 0 : layer.horizontalPosition;
+        } else if (layer.horizontalPosition < 0) {
+            layer.horizontalPosition < -1 * Math.pow(2, 53) ? 0 : layer.horizontalPosition;
+        }
+
+        var x = 0;
+        var y = 0;
+        var amplitude = layer.maxAmplitude * Math.sin(layer.angle * Math.PI / 180);
+
+        var meterBottom = (options.size - (options.size - getMeterRadius()) / 2) - options.borderWidth;
+        var fluidAmount = currentFillPercentage * (getMeterRadius() - options.borderWidth * 2) / 100;
+
+        if (currentFillPercentage < fillPercentage) {
+            currentFillPercentage += 15 * dt;
+        } else if (currentFillPercentage > fillPercentage) {
+            currentFillPercentage -= 15 * dt;
+        }
+
+        layer.initialHeight = meterBottom - fluidAmount;
+
+        context.save();
+        context.beginPath();
+
+        context.lineTo(0, layer.initialHeight);
+
+        while (x < options.size) {
+            y = layer.initialHeight + amplitude * Math.sin((x + layer.horizontalPosition) / layer.frequency);
+            context.lineTo(x, y);
+            x++;
+        }
+
+        context.lineTo(x, options.size);
+        context.lineTo(0, options.size);
+        context.closePath();
+
+        context.fillStyle = layer.fillStyle;
+        context.fill();
+        context.restore();
+    }
+
+    /**
+     * clipping mask for objects within the fluid constrains
+     * @param {Object} layer layer to be used as a mask
+     */
+    function drawFluidMask(layer) {
+        var x = 0;
+        var y = 0;
+        var amplitude = layer.maxAmplitude * Math.sin(layer.angle * Math.PI / 180);
+
+        context.beginPath();
+
+        context.lineTo(0, layer.initialHeight);
+
+        while (x < options.size) {
+            y = layer.initialHeight + amplitude * Math.sin((x + layer.horizontalPosition) / layer.frequency);
+            context.lineTo(x, y);
+            x++;
+        }
+        context.lineTo(x, options.size);
+        context.lineTo(0, options.size);
+        context.closePath();
+        context.clip();
+    }
+
+    function drawBubblesLayer(dt) {
+        context.save();
+        for (var i = 0; i < bubblesLayer.bubbles.length; i++) {
+            var bubble = bubblesLayer.bubbles[i];
+
+            context.beginPath();
+            context.strokeStyle = 'white';
+            context.arc(bubble.x, bubble.y, bubble.r, 2 * Math.PI, false);
+            context.stroke();
+            context.closePath();
+
+            var currentSpeed = bubblesLayer.current * dt;
+
+            bubble.velX = Math.abs(bubble.velX) < Math.abs(bubblesLayer.current) ? bubble.velX + currentSpeed : bubblesLayer.current;
+            bubble.y = bubble.y - bubble.velY * dt;
+            bubble.x = bubble.x + (bubblesLayer.swing ? 0.4 * Math.cos(bubblesLayer.swing += 0.03) * bubblesLayer.swing : 0) + bubble.velX * 0.5;
+
+            // determine if current bubble is outside the safe area
+            var meterBottom = (options.size - (options.size - getMeterRadius()) / 2) - options.borderWidth;
+            var fluidAmount = currentFillPercentage * (getMeterRadius() - options.borderWidth * 2) / 100;
+
+            if (bubble.y <= meterBottom - fluidAmount) {
+                bubblesLayer.reset(bubble);
+            }
+
+        }
+        context.restore();
+    }
+
+    function drawText() {
+
+        var text = options.drawPercentageSign ?
+            currentFillPercentage.toFixed(0) + "%" : currentFillPercentage.toFixed(0);
+
+        context.save();
+        context.font = getFontSize();
+        context.fillStyle = options.fontFillStyle;
+        context.textAlign = "center";
+        context.textBaseline = 'middle';
+        context.filter = "drop-shadow(0px 0px 5px rgba(0,0,0,0.4))"
+        context.fillText(text, options.size / 2, options.size / 2);
+        context.restore();
+    }
+
+    //#region helper methods
+    function clamp(number, min, max) {
+        return Math.min(Math.max(number, min), max);
+    };
+
+    function getMeterRadius() {
+        return options.size * 0.9;
+    }
+
+    function random(min, max) {
+        var delta = max - min;
+        return max === min ? min : Math.random() * delta + min;
+    }
+
+    function getFontSize() {
+        return options.fontSize + " " + options.fontFamily;
+    }
+
+    //#endregion
+
+    return {
+        init: function (env) {
+            if (!env.targetContainer)
+                throw "empty or invalid container";
+
+            targetContainer = env.targetContainer;
+            fillPercentage = clamp(env.fillPercentage, 0, 100);
+
+            if (env.options) {
+                options.drawShadow = env.options.drawShadow === false ? false : true;
+                options.size = env.options.size;
+                options.drawBubbles = env.options.drawBubbles === false ? false : true;
+                options.borderWidth = env.options.borderWidth || options.borderWidth;
+                options.foregroundFluidColor = env.options.foregroundFluidColor || options.foregroundFluidColor;
+                options.backgroundFluidColor = env.options.backgroundFluidColor || options.backgroundFluidColor;
+                options.backgroundColor = env.options.backgroundColor || options.backgroundColor;
+                options.foregroundColor = env.options.foregroundColor || options.foregroundColor;
+
+                options.drawText = env.options.drawText === false ? false : true;
+                options.drawPercentageSign = env.options.drawPercentageSign === false ? false : true;
+                options.fontSize = env.options.fontSize || options.fontSize;
+                options.fontFamily = env.options.fontFamily || options.fontFamily;
+                options.fontFillStyle = env.options.fontFillStyle || options.fontFillStyle;
+                // fluid settings
+
+                if (env.options.foregroundFluidLayer) {
+                    foregroundFluidLayer.fillStyle = env.options.foregroundFluidLayer.fillStyle || foregroundFluidLayer.fillStyle;
+                    foregroundFluidLayer.angularSpeed = env.options.foregroundFluidLayer.angularSpeed || foregroundFluidLayer.angularSpeed;
+                    foregroundFluidLayer.maxAmplitude = env.options.foregroundFluidLayer.maxAmplitude || foregroundFluidLayer.maxAmplitude;
+                    foregroundFluidLayer.frequency = env.options.foregroundFluidLayer.frequency || foregroundFluidLayer.frequency;
+                    foregroundFluidLayer.horizontalSpeed = env.options.foregroundFluidLayer.horizontalSpeed || foregroundFluidLayer.horizontalSpeed;
+                }
+
+                if (env.options.backgroundFluidLayer) {
+                    backgroundFluidLayer.fillStyle = env.options.backgroundFluidLayer.fillStyle || backgroundFluidLayer.fillStyle;
+                    backgroundFluidLayer.angularSpeed = env.options.backgroundFluidLayer.angularSpeed || backgroundFluidLayer.angularSpeed;
+                    backgroundFluidLayer.maxAmplitude = env.options.backgroundFluidLayer.maxAmplitude || backgroundFluidLayer.maxAmplitude;
+                    backgroundFluidLayer.frequency = env.options.backgroundFluidLayer.frequency || backgroundFluidLayer.frequency;
+                    backgroundFluidLayer.horizontalSpeed = env.options.backgroundFluidLayer.horizontalSpeed || backgroundFluidLayer.horizontalSpeed;
+                }
+            }
+
+
+            bubblesLayer.init();
+            setupCanvas();
+            draw();
+        },
+        setPercentage(percentage) {
+
+            fillPercentage = clamp(percentage, 0, 100);
+        }
+    }
+};
+
+let fm3 = new FluidMeter();
+fm3.init({
+    targetContainer: document.getElementById("side"),
+    fillPercentage: 45,
+    options: {
+        fontSize: "30px",
+        drawPercentageSign: true,
+        drawBubbles: false,
+        size: 300,
+        borderWidth: 19,
+        backgroundColor: "#e2e2e2",
+        foregroundColor: "#fafafa",
+        foregroundFluidLayer: {
+            fillStyle: "khaki",
+            angularSpeed: 30,
+            maxAmplitude: 5,
+            frequency: 30,
+            horizontalSpeed: -20
+        },
+        backgroundFluidLayer: {
+            fillStyle: "#FFD43B",
+            angularSpeed: 100,
+            maxAmplitude: 3,
+            frequency: 22,
+            horizontalSpeed: 20
+        }
+    }
+});
+
+window.onload = function () {
+    document.body.onkeydown =
+        function (e) {
+            if (e.key == "Space" ||
+                e.key == " ") {
+                if (sugar_count == 4) {
+                    pour();
+                }
+            }
+        }
+    fm3.setPercentage(0);
+};
