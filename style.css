@@ -138,8 +138,6 @@ button {
     grid-template-columns: 2fr 1fr;
 }
 
-#pour {
-}
 
 @keyframes move {
     0% {
